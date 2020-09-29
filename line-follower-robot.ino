@@ -1,28 +1,28 @@
-#include <Servo.h>
-
-#define QUANTITY_OF_CI 1
-
-#define PIN_DS 8
-#define PIN_SH_CP 4
 #define PIN_ENABLE 7
-#define PIN_ST_CP 12
 
-#define BIT_MOTOR_1_A 2
-#define BIT_MOTOR_1_B 3
-#define BIT_MOTOR_2_A 1
-#define BIT_MOTOR_2_B 4
+#define BIT_MOTOR_1_A 5
+#define BIT_MOTOR_1_B 7
+#define BIT_MOTOR_2_A 0
+#define BIT_MOTOR_2_B 6
 
-#define PIN_MOTOR_2_PWM 3
-#define PIN_MOTOR_1_PWM 11
+#define PIN_MOTOR_2_PWM 6
+#define PIN_MOTOR_1_PWM 5
 
 #define COMPLETE_ROTATION 20
 
-#define PIN_LASER_SENSOR_LEFT 0
-#define PIN_LASER_SENSOR_RIGHT 1
-#define PIN_LASER_SENSOR_CENTRAL 2
+#define MIN_ANALOG_VALUE 500
 
-#define PIN_LASER_SENSOR_LEFT_BACK 3
-#define PIN_LASER_SENSOR_RIGHT_BACK 4
+#define PIN_LASER_SENSOR_LEFT A0
+#define PIN_LASER_SENSOR_RIGHT A1
+#define PIN_LASER_SENSOR_CENTRAL A2
+
+#define PIN_LASER_SENSOR_LEFT_BACK A3
+#define PIN_LASER_SENSOR_RIGHT_BACK A4
+
+#define MOTOR_VELOCITY_0 25
+#define MOTOR_VELOCITY_1 80
+#define MOTOR_VELOCITY_2 180
+#define MOTOR_VELOCITY_3 255
 
 unsigned int rotationStep = 0;
 unsigned int completeRotations = 0;
@@ -31,9 +31,6 @@ unsigned int lastLaserSensorState = 0;
 void setup() {
 	Serial.begin(9600);
 
-	pinMode(PIN_DS, OUTPUT);
-	pinMode(PIN_SH_CP, OUTPUT);
-	pinMode(PIN_ST_CP, OUTPUT);
 	pinMode(PIN_ENABLE, OUTPUT);
 
 	pinMode(PIN_MOTOR_1_PWM, OUTPUT);
@@ -48,40 +45,17 @@ void setup() {
 
 	digitalWrite(PIN_ENABLE, LOW);
 
-	setMotorSpeed(PIN_MOTOR_1_PWM, 255);
-	setMotorSpeed(PIN_MOTOR_2_PWM, 255);
+	digitalWrite(BIT_MOTOR_1_B, LOW);
+	digitalWrite(BIT_MOTOR_1_A, HIGH);
 
-	setMotorStatusByPin(BIT_MOTOR_1_B, LOW);
-	setMotorStatusByPin(BIT_MOTOR_1_A, HIGH);
+	digitalWrite(BIT_MOTOR_2_B, LOW);
+	digitalWrite(BIT_MOTOR_2_A, HIGH);
 
-	setMotorStatusByPin(BIT_MOTOR_2_B, LOW);
-	setMotorStatusByPin(BIT_MOTOR_2_A, HIGH);
-}
-
-void setMotorStatusByPin(byte pin, bool status) {
-	static byte ciBuffer[QUANTITY_OF_CI];
-
-	bitWrite(ciBuffer[pin / 8], pin % 8, status);
-
-	digitalWrite(PIN_DS, LOW);
-	digitalWrite(PIN_SH_CP, LOW);
-	digitalWrite(PIN_ST_CP, LOW);
-
-	for (unsigned int nC = QUANTITY_OF_CI - 1; nC >= 0; nC--) {
-		for (unsigned int nB = 7; nB >= 0; nB--) {
-			digitalWrite(PIN_SH_CP, LOW);
-			digitalWrite(PIN_DS, bitRead(ciBuffer[nC], nB));
-			digitalWrite(PIN_SH_CP, HIGH);
-			digitalWrite(PIN_DS, LOW);
-		}
-	}
-
-	digitalWrite(PIN_ST_CP, HIGH);
+	setMotorSpeed(PIN_MOTOR_1_PWM, MOTOR_VELOCITY_3);
+	setMotorSpeed(PIN_MOTOR_2_PWM, MOTOR_VELOCITY_3);
 }
 
 void setMotorSpeed(unsigned int pinPwmToUpdate, unsigned int speedValue) {
-	if (speedValue < 25) speedValue = 25;
-	if (speedValue > 255) speedValue = 255;
 	analogWrite(pinPwmToUpdate, speedValue);
 }
 
@@ -93,8 +67,8 @@ void checkIfCompleteRotation() {
 }
 
 void startRunningEncoderVerification() {
-	unsigned int laserSensorState = digitalRead(PIN_LASER_SENSOR_LEFT_BACK);
-	if (laserSensorState == LOW) {
+	unsigned int laserSensorState = analogRead(PIN_LASER_SENSOR_LEFT_BACK);
+	if (laserSensorState <= MIN_ANALOG_VALUE) {
 		if (lastLaserSensorState == HIGH) {
 			rotationStep += 1;
 			lastLaserSensorState = LOW;
@@ -108,9 +82,30 @@ void startRunningEncoderVerification() {
 }
 
 void startRunningMotor() {
+	unsigned int laserSensorLeftState = analogRead(PIN_LASER_SENSOR_LEFT);
+	unsigned int laserSensorRightState = analogRead(PIN_LASER_SENSOR_RIGHT);
+	unsigned int laserSensorCentralState = analogRead(PIN_LASER_SENSOR_CENTRAL);
+
+	Serial.println(laserSensorCentralState);
+
+	if (laserSensorCentralState > MIN_ANALOG_VALUE) {
+		if (laserSensorLeftState <= MIN_ANALOG_VALUE) {
+			setMotorSpeed(PIN_MOTOR_1_PWM, MOTOR_VELOCITY_3);
+			setMotorSpeed(PIN_MOTOR_2_PWM, MOTOR_VELOCITY_2);
+		}
+
+		if (laserSensorRightState <= MIN_ANALOG_VALUE) {
+			setMotorSpeed(PIN_MOTOR_1_PWM, MOTOR_VELOCITY_2);
+			setMotorSpeed(PIN_MOTOR_2_PWM, MOTOR_VELOCITY_3);
+		}
+	} else {
+		setMotorSpeed(PIN_MOTOR_1_PWM, MOTOR_VELOCITY_3);
+		setMotorSpeed(PIN_MOTOR_2_PWM, MOTOR_VELOCITY_3);
+	}
 
 }
 
 void loop() {
+	startRunningMotor();
 	startRunningEncoderVerification();
 }
