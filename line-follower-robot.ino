@@ -26,9 +26,9 @@
 #define PIN_LASER_SENSOR_RIGHT_BACK A4
 
 #define MOTOR_VELOCITY_0 0
-#define MOTOR_VELOCITY_1 25
-#define MOTOR_VELOCITY_2 80
-#define MOTOR_VELOCITY_3 180
+#define MOTOR_VELOCITY_1 20
+#define MOTOR_VELOCITY_2 130
+#define MOTOR_VELOCITY_3 160
 #define MOTOR_VELOCITY_4 255
 
 unsigned int rotationStep = 0;
@@ -103,34 +103,17 @@ void startRunningMotor() {
 	unsigned int laserSensorRightState = analogRead(PIN_LASER_SENSOR_RIGHT);
 	unsigned int laserSensorCentralState = analogRead(PIN_LASER_SENSOR_CENTRAL);
 
-	Serial.println(laserSensorCentralState);
-
-	if (laserSensorCentralState > MIN_ANALOG_VALUE) {
-		if (laserSensorLeftState <= MIN_ANALOG_VALUE) {
-			setMotorSpeed(PIN_MOTOR_1_PWM, MOTOR_VELOCITY_3);
-			setMotorSpeed(PIN_MOTOR_2_PWM, MOTOR_VELOCITY_2);
-		}
-
-		if (laserSensorRightState <= MIN_ANALOG_VALUE) {
-			setMotorSpeed(PIN_MOTOR_1_PWM, MOTOR_VELOCITY_2);
-			setMotorSpeed(PIN_MOTOR_2_PWM, MOTOR_VELOCITY_3);
-		}
+	if (laserSensorRightState > MIN_ANALOG_VALUE) {
+		setMotorSpeed(PIN_MOTOR_2_PWM, MOTOR_VELOCITY_0);
 	} else {
-		setMotorSpeed(PIN_MOTOR_1_PWM, MOTOR_VELOCITY_3);
 		setMotorSpeed(PIN_MOTOR_2_PWM, MOTOR_VELOCITY_3);
 	}
 
-//    if (laserSensorLeftState <= MIN_ANALOG_VALUE) {
-//      setMotorSpeed(PIN_MOTOR_1_PWM, MOTOR_VELOCITY_2);
-//      setMotorSpeed(PIN_MOTOR_2_PWM, MOTOR_VELOCITY_3);
-//      setMotorSpeed(PIN_MOTOR_3_PWM, MOTOR_VELOCITY_0);
-//      setMotorSpeed(PIN_MOTOR_4_PWM, MOTOR_VELOCITY_0);
-//    } else {
-//      setMotorSpeed(PIN_MOTOR_1_PWM, MOTOR_VELOCITY_3);
-//      setMotorSpeed(PIN_MOTOR_2_PWM, MOTOR_VELOCITY_2);
-//      setMotorSpeed(PIN_MOTOR_3_PWM, MOTOR_VELOCITY_3);
-//      setMotorSpeed(PIN_MOTOR_4_PWM, MOTOR_VELOCITY_3);
-//    }
+	if (laserSensorLeftState > MIN_ANALOG_VALUE) {
+		setMotorSpeed(PIN_MOTOR_1_PWM, MOTOR_VELOCITY_0);
+	} else {
+		setMotorSpeed(PIN_MOTOR_1_PWM, MOTOR_VELOCITY_3);
+	}
 }
 
 void loop() {
